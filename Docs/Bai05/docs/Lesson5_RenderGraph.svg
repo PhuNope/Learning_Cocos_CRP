@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1020" viewBox="0 0 1600 1020" role="img" aria-label="Bài 5 Cocos 3.8.8: RenderGraph chuỗi hiệu ứng Grayscale Invert Tint và Camera Overlay">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#091321"/><stop offset="1" stop-color="#142f40"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40c9a2"/><stop offset="1" stop-color="#37a1f5"/></linearGradient>
+    <linearGradient id="ping" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6256cf"/><stop offset="1" stop-color="#a468e9"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#000" flood-opacity=".25"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#b2ccdd"/></marker>
+    <style>
+      .title{font:700 43px Arial, sans-serif;fill:#fff}
+      .subtitle{font:400 22px Arial,sans-serif;fill:#c5d7e3}
+      .blocktitle{font:700 23px Arial,sans-serif;fill:#fff}
+      .sm{font:400 17px Arial,sans-serif;fill:#d2e2ec}
+      .note{font:400 17px Arial,sans-serif;fill:#a3bbc9}
+      .num{font:700 18px Arial,sans-serif;fill:#112437}
+      .section{font:700 26px Arial,sans-serif;fill:#e8f3f7}
+      .flow{stroke:#b2ccdd;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="1020" fill="url(#background)"/>
+  <rect x="45" y="40" width="1510" height="940" rx="28" fill="#102338" stroke="#34536b" stroke-width="2"/>
+  <text x="93" y="108" class="title">BÀI 5 · MULTI-PASS POST-PROCESSING</text>
+  <text x="94" y="149" class="subtitle">Cocos Creator 3.8.8 · SceneColor → Ping A → Ping B → RenderWindow</text>
+  <text x="94" y="212" class="section">1. Chuỗi ba hiệu ứng (World Camera)</text>
+  <g filter="url(#shadow)">
+    <rect x="96" y="245" width="280" height="170" rx="18" fill="#234762" stroke="#5386a7"/>
+    <rect x="485" y="245" width="280" height="170" rx="18" fill="url(#ping)"/>
+    <rect x="874" y="245" width="280" height="170" rx="18" fill="url(#ping)"/>
+    <rect x="1263" y="245" width="238" height="170" rx="18" fill="url(#screen)"/>
+  </g>
+  <text x="235" y="286" class="blocktitle" text-anchor="middle">ScenePass</text>
+  <text x="235" y="329" class="sm" text-anchor="middle">3D → SceneColor</text>
+  <text x="235" y="360" class="sm" text-anchor="middle">RGBA8 · Full</text>
+  <text x="625" y="286" class="blocktitle" text-anchor="middle">Grayscale</text>
+  <text x="625" y="329" class="sm" text-anchor="middle">Read SceneColor</text>
+  <text x="625" y="360" class="sm" text-anchor="middle">Write Ping A</text>
+  <text x="1015" y="286" class="blocktitle" text-anchor="middle">Invert Color</text>
+  <text x="1015" y="329" class="sm" text-anchor="middle">Read Ping A</text>
+  <text x="1015" y="360" class="sm" text-anchor="middle">Write Ping B</text>
+  <text x="1382" y="286" class="blocktitle" text-anchor="middle">Color Tint</text>
+  <text x="1382" y="329" class="sm" text-anchor="middle">Read Ping B</text>
+  <text x="1382" y="360" class="sm" text-anchor="middle">Write Screen</text>
+  <path class="flow" d="M379 331 H474"/>
+  <path class="flow" d="M768 331 H862"/>
+  <path class="flow" d="M1157 331 H1251"/>
+  <text x="94" y="469" class="note">Mỗi mũi tên = dữ liệu texture từ pass trước. Pass cuối luôn ghi vào RenderWindow.</text>
+  <text x="94" y="533" class="section">2. Bật / tắt hiệu ứng không được phá chuỗi</text>
+  <g>
+    <rect x="95" y="564" width="440" height="114" rx="16" fill="#1d3b52" stroke="#4e7b97"/>
+    <text x="120" y="607" class="blocktitle">0 hiệu ứng</text>
+    <text x="120" y="644" class="sm">ScenePass → RenderWindow</text>
+    <rect x="578" y="564" width="440" height="114" rx="16" fill="#1d3b52" stroke="#4e7b97"/>
+    <text x="603" y="607" class="blocktitle">1 hiệu ứng</text>
+    <text x="603" y="644" class="sm">SceneColor → Post → Screen</text>
+    <rect x="1061" y="564" width="440" height="114" rx="16" fill="#1d3b52" stroke="#4e7b97"/>
+    <text x="1086" y="607" class="blocktitle">2–3 hiệu ứng</text>
+    <text x="1086" y="644" class="sm">Dùng Ping A / Ping B</text>
+  </g>
+  <text x="94" y="742" class="section">3. Hai Camera dùng chung RenderWindow</text>
+  <rect x="96" y="771" width="528" height="108" rx="14" fill="#284764"/>
+  <rect x="959" y="771" width="542" height="108" rx="14" fill="#284764"/>
+  <text x="360" y="809" class="blocktitle" text-anchor="middle">Camera World</text>
+  <text x="360" y="846" class="sm" text-anchor="middle">Render Scene + Post → Screen</text>
+  <path class="flow" d="M628 827 H946"/>
+  <text x="1230" y="809" class="blocktitle" text-anchor="middle">Camera Overlay</text>
+  <text x="1230" y="846" class="sm" text-anchor="middle">Color LOAD → vẽ thêm lên Screen</text>
+  <text x="94" y="936" class="note">Lưu ý: minh họa trường hợp viewport full screen, Overlay dùng Clear Flags = DEPTH_ONLY.</text>
+</svg>

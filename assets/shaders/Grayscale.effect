@@ -1,0 +1,54 @@
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: lesson4-vs
+      frag: lesson4-fs
+      pass: lesson4-grayscale
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+}%
+
+CCProgram lesson4-vs %{
+  precision highp float;
+  #include <legacy/decode-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <common/common-define>
+
+  out vec2 v_uv;
+
+  void main() {
+    StandardVertInput In;
+    CCDecode(In);
+    CC_HANDLE_GET_CLIP_FLIP(In.position.xy);
+    gl_Position = In.position;
+    v_uv = a_texCoord;
+  }
+}%
+
+CCProgram lesson4-fs %{
+  precision highp float;
+  in vec2 v_uv;
+
+  // "pass" để RenderGraph biết texture này được liên kết qua postPass.addTexture().
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+
+  #pragma rate Lesson4Params pass
+  uniform Lesson4Params {
+    vec4 lesson4Params; // x = grayscale strength [0, 1]
+  };
+
+  layout(location = 0) out vec4 fragColor;
+
+  void main() {
+    vec4 src = texture(inputTexture, v_uv);
+    // Hệ số luma gần đúng theo Rec.709 trong không gian giá trị được sample.
+    float luminance = dot(src.rgb, vec3(0.2126, 0.7152, 0.0722));
+    vec3 gray = vec3(luminance);
+    float amount = clamp(lesson4Params.x, 0.0, 1.0);
+    fragColor = vec4(mix(src.rgb, gray, amount), src.a);
+  }
+}%

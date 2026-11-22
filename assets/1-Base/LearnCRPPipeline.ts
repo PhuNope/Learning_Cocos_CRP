@@ -1,4 +1,4 @@
-import { _decorator, Component, gfx, renderer, rendering } from 'cc';
+import { _decorator, Component, gfx, Material, math, renderer, rendering, Vec4 } from 'cc';
 
 const { ccclass } = _decorator;
 
@@ -25,55 +25,53 @@ const EXPERIMENT: ClearExperiment = 'CAMERA_FLAGS';
 export class LearnCRPPipeline implements rendering.PipelineBuilder {
     private readonly clearColor = new gfx.Color();
     private readonly viewPort = new gfx.Viewport();
-    private debugFrameRemaining = 2;
+    private readonly grayscaleParams = new Vec4(1, 0, 0, 0);
+
+    private postMaterial: Material = null;
+    private warnedMultipleCameras = false;
+
+    public setOptions(material: Material, strength: number) {
+        this.postMaterial = material;
+        this.grayscaleParams.x = math.clamp01(strength);
+    }
+
+    private sceneColorName(window: renderer.RenderWindow): string {
+        return `Lesson4SceneColor_${window.renderWindowId}`;
+    }
+
+    private sceneDepthName(window: renderer.RenderWindow): string {
+        return `Lesson4SceneDepth_${window.renderWindowId}`;
+    }
 
     windowResize?(pipeline: rendering.BasicPipeline, window: renderer.RenderWindow, camera: renderer.scene.Camera, width: number, height: number): void {
         pipeline.addRenderWindow(window.colorName, gfx.Format.RGBA8, width, height, window, window.depthStencilName);
+
+        pipeline.addRenderTarget(this.sceneColorName(window), gfx.Format.RGBA8, width, height);
+
+        pipeline.addDepthStencil(this.sceneDepthName(window), gfx.Format.DEPTH_STENCIL, width, height);
     }
 
     setup(cameras: renderer.scene.Camera[], pipeline: rendering.BasicPipeline): void {
-        const windowCameraCount = new Map<renderer.RenderWindow, number>();
-
-        if (this.debugFrameRemaining > 0) {
-            console.log('[LearnCRP:Lesion 3] API:', pipeline.device.gfxAPI);
-            console.log('[LearnCRP:Lesion 3] experiment:', EXPERIMENT);
-        }
+        const visitedWindows = new Set<number>();
 
         for (let i = 0; i < cameras.length; i++) {
             const camera = cameras[i];
             if (!camera.scene || !camera.window) continue;
 
-            const window = camera.window;
-            const withinWindowIndex = windowCameraCount.get(window) ?? 0;
-            windowCameraCount.set(window, withinWindowIndex + 1);
-
-            if (this.debugFrameRemaining > 0) {
-                console.log('LearnCRP:Lesion 3] camera', {
-                    globalIndex: i,
-                    withinWindowIndex,
-                    name: camera.node?.name ?? '(no node)',
-                    priority: camera.priority,
-                    clearFlag: camera.clearFlag,
-                    viewport: {
-                        x: camera.viewport.x,
-                        y: camera.viewport.y,
-                        width: camera.viewport.width,
-                        height: camera.viewport.height,
-                    },
-                    colorName: camera.window.colorName,
-                    depthName: camera.window.depthStencilName,
-                });
+            const id = camera.window.renderWindowId;
+            if (visitedWindows.has(id)) {
+                if (this.warnedMultipleCameras) {
+                    this.warnedMultipleCameras = true;
+                    console.warn('[Lesson4] Detect multiple Cameras render with RenderWindow. Only render first Camera of each window. Let try with 1 Camera.');
+                }
+                continue;
             }
-
-            this.buildCameraPass(camera, pipeline, withinWindowIndex);
-        }
-
-        if (this.debugFrameRemaining > 0) {
-            this.debugFrameRemaining--;
+            visitedWindows.add(id);
+            this.buildCamera(camera, pipeline);
         }
     }
 
-    private buildCameraPass(camera: renderer.scene.Camera, pipeline: rendering.BasicPipeline, withinWindowIndex: number) {
+    private buildCamera(camera: renderer.scene.Camera, pipeline: rendering.BasicPipeline) {
         const window = camera.window;
         const width = Math.max(Math.floor(window.width), 1);
         const height = Math.max(Math.floor(window.height), 1);
@@ -90,41 +88,36 @@ export class LearnCRPPipeline implements rendering.PipelineBuilder {
         this.clearColor.z = c.z;
         this.clearColor.w = c.w;
 
-        const pass = pipeline.addRenderPass(width, height, 'default');
-        pass.setViewport(this.viewPort);
+        const hasPost = this.postMaterial !== null;
+        // const hasPost = false;
+        const sceneOutput = hasPost ? this.sceneColorName(window) : window.colorName;
 
-        let colorLoad = (camera.clearFlag & gfx.ClearFlagBit.COLOR) ? gfx.LoadOp.CLEAR : gfx.LoadOp.LOAD;
-        let depthClearBits = camera.clearFlag & gfx.ClearFlagBit.DEPTH_STENCIL;
-        let depthLoad = depthClearBits ? gfx.LoadOp.CLEAR : gfx.LoadOp.LOAD;
+        // render 3D and UI
+        const scenePass = pipeline.addRenderPass(width, height, 'default');
+        scenePass.setViewport(this.viewPort);
+        scenePass.addRenderTarget(sceneOutput, gfx.LoadOp.CLEAR, gfx.StoreOp.STORE, this.clearColor);
+        scenePass.addDepthStencil(
+            hasPost ? this.sceneDepthName(window) : window.depthStencilName,
+            gfx.LoadOp.CLEAR,
+            gfx.StoreOp.DISCARD,
+            camera.clearDepth,
+            camera.clearStencil,
+            gfx.ClearFlagBit.DEPTH_STENCIL,
+        );
 
-        if (withinWindowIndex > 0) {
-            switch (EXPERIMENT) {
-                case 'FORCE_LATER_COLOR_CLEAR':
-                    colorLoad = gfx.LoadOp.CLEAR;
-                    break;
-                case 'FORCE_LATER_COLOR_LOAD':
-                    colorLoad = gfx.LoadOp.LOAD;
-                    break;
-                case 'FORCE_LATER_DEPTH_LOAD':
-                    depthLoad = gfx.LoadOp.LOAD;
-                    depthClearBits = 0;
-                    break;
-                case 'FORCE_LATER_DEPTH_CLEAR':
-                    depthLoad = gfx.LoadOp.CLEAR;
-                    depthClearBits = gfx.ClearFlagBit.DEPTH_STENCIL;
-                    break;
-            }
-        }
+        this.addQueues(scenePass, camera);
 
-        pass.addRenderTarget(window.colorName, colorLoad, gfx.StoreOp.STORE, this.clearColor);
+        if (!hasPost) return;
 
-        if (depthLoad === gfx.LoadOp.CLEAR) {
-            pass.addDepthStencil(window.depthStencilName, gfx.LoadOp.CLEAR, gfx.StoreOp.STORE, camera.clearDepth, camera.clearStencil);
-        } else {
-            pass.addDepthStencil(window.depthStencilName, gfx.LoadOp.LOAD, gfx.StoreOp.STORE);
-        }
+        // Sample SceneColor and draw fullscreen quad to RenderWindow
+        const postPass = pipeline.addRenderPass(width, height, 'lesson4-grayscale');
+        postPass.setViewport(this.viewPort);
+        postPass.addRenderTarget(window.colorName, gfx.LoadOp.CLEAR, gfx.StoreOp.STORE, this.clearColor);
 
-        this.addQueues(pass, camera);
+        postPass.addTexture(this.sceneColorName(window), 'inputTexture');
+        postPass.setVec4('lesson4Params', this.grayscaleParams);
+        postPass.addQueue(rendering.QueueHint.OPAQUE)
+            .addFullscreenQuad(this.postMaterial, 0);
     }
 
     private addQueues(pass: rendering.BasicRenderPassBuilder, camera: renderer.scene.Camera) {
@@ -167,10 +160,28 @@ export class LearnCRPPipeline implements rendering.PipelineBuilder {
     }
 }
 
+const BUILDER = new LearnCRPPipeline();
 if (rendering) {
-    rendering.setCustomPipeline('LearnCRP', new LearnCRPPipeline());
+    rendering.setCustomPipeline('LearnCRP', BUILDER);
 }
 
 @ccclass('LearnCRPPipelineEntry')
 export class LearningCRPPipelineEntry extends Component {
+    @_decorator.property(Material)
+    public postMaterial: Material = null;
+
+    @_decorator.property({ range: [0, 1, 0.05] })
+    public grayscaleStrength = 1;
+
+    protected onEnable() {
+        BUILDER.setOptions(this.postMaterial, this.grayscaleStrength);
+    }
+
+    protected update(dt: number) {
+        BUILDER.setOptions(this.postMaterial, this.grayscaleStrength);
+    }
+
+    protected onDisable() {
+        BUILDER.setOptions(null, 1);
+    }
 }
