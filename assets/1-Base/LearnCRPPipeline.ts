@@ -13,67 +13,115 @@ type QueueMode =
 
 const QUEUE_MODE: QueueMode = 'SPLIT_ALL';
 
+type ClearExperiment =
+    | 'CAMERA_FLAGS'
+    | 'FORCE_LATER_COLOR_CLEAR'
+    | 'FORCE_LATER_COLOR_LOAD'
+    | 'FORCE_LATER_DEPTH_LOAD'
+    | 'FORCE_LATER_DEPTH_CLEAR';
+
+const EXPERIMENT: ClearExperiment = 'CAMERA_FLAGS';
+
 export class LearnCRPPipeline implements rendering.PipelineBuilder {
     private readonly clearColor = new gfx.Color();
     private readonly viewPort = new gfx.Viewport();
+    private debugFrameRemaining = 2;
 
     windowResize?(pipeline: rendering.BasicPipeline, window: renderer.RenderWindow, camera: renderer.scene.Camera, width: number, height: number): void {
         pipeline.addRenderWindow(window.colorName, gfx.Format.RGBA8, width, height, window, window.depthStencilName);
     }
 
     setup(cameras: renderer.scene.Camera[], pipeline: rendering.BasicPipeline): void {
-        for (const camera of cameras) {
+        const windowCameraCount = new Map<renderer.RenderWindow, number>();
+
+        if (this.debugFrameRemaining > 0) {
+            console.log('[LearnCRP:Lesion 3] API:', pipeline.device.gfxAPI);
+            console.log('[LearnCRP:Lesion 3] experiment:', EXPERIMENT);
+        }
+
+        for (let i = 0; i < cameras.length; i++) {
+            const camera = cameras[i];
             if (!camera.scene || !camera.window) continue;
 
-            this.renderCamera(camera, pipeline);
+            const window = camera.window;
+            const withinWindowIndex = windowCameraCount.get(window) ?? 0;
+            windowCameraCount.set(window, withinWindowIndex + 1);
+
+            if (this.debugFrameRemaining > 0) {
+                console.log('LearnCRP:Lesion 3] camera', {
+                    globalIndex: i,
+                    withinWindowIndex,
+                    name: camera.node?.name ?? '(no node)',
+                    priority: camera.priority,
+                    clearFlag: camera.clearFlag,
+                    viewport: {
+                        x: camera.viewport.x,
+                        y: camera.viewport.y,
+                        width: camera.viewport.width,
+                        height: camera.viewport.height,
+                    },
+                    colorName: camera.window.colorName,
+                    depthName: camera.window.depthStencilName,
+                });
+            }
+
+            this.buildCameraPass(camera, pipeline, withinWindowIndex);
+        }
+
+        if (this.debugFrameRemaining > 0) {
+            this.debugFrameRemaining--;
         }
     }
 
-    private renderCamera(camera: renderer.scene.Camera, pipeline: rendering.BasicPipeline) {
+    private buildCameraPass(camera: renderer.scene.Camera, pipeline: rendering.BasicPipeline, withinWindowIndex: number) {
         const window = camera.window;
-
         const width = Math.max(Math.floor(window.width), 1);
         const height = Math.max(Math.floor(window.height), 1);
 
-        // Get info Clear Color
+        const v = camera.viewport;
+        this.viewPort.left = Math.round(v.x * width);
+        this.viewPort.top = Math.round(v.y * height);
+        this.viewPort.width = Math.max(Math.round(v.width * width), 1);
+        this.viewPort.height = Math.max(Math.round(v.height * height), 1);
+
         const c = camera.clearColor;
         this.clearColor.x = c.x;
         this.clearColor.y = c.y;
         this.clearColor.z = c.z;
         this.clearColor.w = c.w;
 
-        // Calculate viewport by pixel
-        const v = camera.viewport;
-
-        this.viewPort.left = Math.round(v.x * width);
-        this.viewPort.top = Math.round(v.y * height);
-        this.viewPort.width = Math.max(Math.round(v.width * width), 1);
-        this.viewPort.height = Math.max(Math.round(v.height * height), 1);
-
-        // Raster RenderPass
         const pass = pipeline.addRenderPass(width, height, 'default');
         pass.setViewport(this.viewPort);
 
-        // Color Output
-        const colorLoadOp = (camera.clearFlag & gfx.ClearFlagBit.COLOR) ? gfx.LoadOp.CLEAR : gfx.LoadOp.LOAD;
-        pass.addRenderTarget(window.colorName, colorLoadOp, gfx.StoreOp.STORE, this.clearColor);
+        let colorLoad = (camera.clearFlag & gfx.ClearFlagBit.COLOR) ? gfx.LoadOp.CLEAR : gfx.LoadOp.LOAD;
+        let depthClearBits = camera.clearFlag & gfx.ClearFlagBit.DEPTH_STENCIL;
+        let depthLoad = depthClearBits ? gfx.LoadOp.CLEAR : gfx.LoadOp.LOAD;
 
-        // DepthStencil
-        if (camera.clearFlag & gfx.ClearFlagBit.DEPTH_STENCIL) {
-            pass.addDepthStencil(
-                window.depthStencilName,
-                gfx.LoadOp.CLEAR,
-                gfx.StoreOp.STORE,
-                camera.clearDepth,
-                camera.clearStencil,
-                camera.clearFlag & gfx.ClearFlagBit.DEPTH_STENCIL,
-            );
+        if (withinWindowIndex > 0) {
+            switch (EXPERIMENT) {
+                case 'FORCE_LATER_COLOR_CLEAR':
+                    colorLoad = gfx.LoadOp.CLEAR;
+                    break;
+                case 'FORCE_LATER_COLOR_LOAD':
+                    colorLoad = gfx.LoadOp.LOAD;
+                    break;
+                case 'FORCE_LATER_DEPTH_LOAD':
+                    depthLoad = gfx.LoadOp.LOAD;
+                    depthClearBits = 0;
+                    break;
+                case 'FORCE_LATER_DEPTH_CLEAR':
+                    depthLoad = gfx.LoadOp.CLEAR;
+                    depthClearBits = gfx.ClearFlagBit.DEPTH_STENCIL;
+                    break;
+            }
+        }
+
+        pass.addRenderTarget(window.colorName, colorLoad, gfx.StoreOp.STORE, this.clearColor);
+
+        if (depthLoad === gfx.LoadOp.CLEAR) {
+            pass.addDepthStencil(window.depthStencilName, gfx.LoadOp.CLEAR, gfx.StoreOp.STORE, camera.clearDepth, camera.clearStencil);
         } else {
-            pass.addDepthStencil(
-                window.depthStencilName,
-                gfx.LoadOp.LOAD,
-                gfx.StoreOp.STORE,
-            );
+            pass.addDepthStencil(window.depthStencilName, gfx.LoadOp.LOAD, gfx.StoreOp.STORE);
         }
 
         this.addQueues(pass, camera);

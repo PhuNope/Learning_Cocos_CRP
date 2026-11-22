@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="865" viewBox="0 0 1480 865" role="img" aria-label="Sơ đồ RenderGraph hai pass trong Cocos 3.8.8: Camera Scene sang SceneColor, Grayscale PostPass, sau cùng RenderWindow">
+ <defs>
+  <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101a2b"/><stop offset="1" stop-color="#18283a"/></linearGradient>
+  <linearGradient id="scene" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#244d6f"/><stop offset="1" stop-color="#172638"/></linearGradient>
+  <linearGradient id="gray" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#56616c"/><stop offset="1" stop-color="#1b2632"/></linearGradient>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5bbfda"/></marker>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="11" flood-color="#07101c" flood-opacity=".35"/></filter>
+  <clipPath id="colorClip"><rect x="547" y="207" width="242" height="177" rx="15"/></clipPath>
+  <clipPath id="grayClip"><rect x="1124" y="207" width="242" height="177" rx="15"/></clipPath>
+ </defs>
+ <rect width="1480" height="865" fill="url(#bg)"/>
+ <text x="68" y="68" fill="#91aabf" font-family="Arial, sans-serif" font-size="17" letter-spacing="3">COCOS CREATOR 3.8.8 • CUSTOM RENDER PIPELINE</text>
+ <text x="68" y="116" fill="#f6f8fc" font-family="Arial, sans-serif" font-size="36" font-weight="700">Bài 4 — Render to Texture → Grayscale</text>
+ <text x="68" y="150" fill="#aabdd0" font-family="Arial, sans-serif" font-size="18">Hai RenderPass • Một texture trung gian • Một fullscreen shader</text>
+
+ <g filter="url(#shadow)">
+  <rect x="65" y="194" width="260" height="238" rx="20" fill="#223347" stroke="#416078" stroke-width="2"/>
+  <text x="92" y="226" fill="#88bbd5" font-size="15" font-family="Arial" font-weight="700">INPUT</text>
+  <text x="92" y="259" fill="white" font-size="24" font-family="Arial" font-weight="700">Camera + Scene</text>
+  <rect x="90" y="277" width="210" height="113" rx="13" fill="url(#scene)"/>
+  <ellipse cx="195" cy="365" rx="80" ry="10" fill="#132436" opacity=".7"/>
+  <polygon points="130,326 169,311 190,323 153,341" fill="#ffad65"/><polygon points="130,326 153,341 153,375 130,361" fill="#e46455"/><polygon points="153,341 190,323 190,356 153,375" fill="#c7484f"/>
+  <circle cx="232" cy="337" r="28" fill="#54bade"/><ellipse cx="220" cy="324" rx="10" ry="7" fill="#b4e5f4" opacity=".6"/>
+  <text x="92" y="414" fill="#9fb5c8" font-size="14" font-family="Arial">Mesh / Material / Queues</text>
+
+  <rect x="361" y="194" width="150" height="238" rx="20" fill="#243c50" stroke="#54839b" stroke-width="2"/>
+  <text x="379" y="227" fill="#8be1e1" font-size="15" font-family="Arial" font-weight="700">PASS 1</text>
+  <text x="379" y="270" fill="white" font-size="24" font-family="Arial" font-weight="700">Scene</text>
+  <text x="379" y="299" fill="white" font-size="24" font-family="Arial" font-weight="700">Pass</text>
+  <text x="379" y="338" fill="#bed0dd" font-size="16" font-family="Arial">Opaque</text>
+  <text x="379" y="362" fill="#bed0dd" font-size="16" font-family="Arial">Mask</text>
+  <text x="379" y="386" fill="#bed0dd" font-size="16" font-family="Arial">Blend</text>
+
+  <rect x="531" y="194" width="274" height="238" rx="20" fill="#20354a" stroke="#5bbeda" stroke-width="3"/>
+  <rect x="547" y="207" width="242" height="177" rx="15" fill="url(#scene)"/>
+  <g clip-path="url(#colorClip)">
+   <rect x="552" y="351" width="234" height="37" fill="#2b4856"/>
+   <polygon points="590,279 641,254 676,274 621,300" fill="#ffd18b"/><polygon points="590,279 621,300 621,361 590,339" fill="#e96b61"/><polygon points="621,300 676,274 676,336 621,361" fill="#d23d58"/>
+   <circle cx="718" cy="300" r="39" fill="#56c8e9"/><ellipse cx="704" cy="282" rx="15" ry="11" fill="#e1fdff" opacity=".55"/>
+  </g>
+  <text x="553" y="412" fill="#e4f5fc" font-size="19" font-weight="700" font-family="Arial">SceneColor · RGBA8</text>
+
+  <rect x="843" y="194" width="241" height="238" rx="20" fill="#243c50" stroke="#54839b" stroke-width="2"/>
+  <text x="864" y="227" fill="#8be1e1" font-size="15" font-family="Arial" font-weight="700">PASS 2</text>
+  <text x="864" y="260" fill="white" font-size="24" font-family="Arial" font-weight="700">Grayscale</text>
+  <rect x="864" y="282" width="196" height="82" rx="12" fill="#132839" stroke="#35566e"/>
+  <text x="876" y="307" fill="#e3b8fd" font-size="15" font-family="monospace">sample(inputTexture)</text>
+  <text x="876" y="332" fill="#e3b8fd" font-size="15" font-family="monospace">dot(rgb, luma)</text>
+  <text x="876" y="354" fill="#e3b8fd" font-size="15" font-family="monospace">mix(rgb, gray)</text>
+  <text x="864" y="411" fill="#aacbd6" font-size="17" font-family="Arial">Fullscreen Quad</text>
+
+  <rect x="1108" y="194" width="274" height="238" rx="20" fill="#20354a" stroke="#9cabb9" stroke-width="2"/>
+  <rect x="1124" y="207" width="242" height="177" rx="15" fill="url(#gray)"/>
+  <g clip-path="url(#grayClip)">
+   <rect x="1129" y="351" width="234" height="37" fill="#374b55"/>
+   <polygon points="1167,279 1218,254 1253,274 1198,300" fill="#b7b7b7"/><polygon points="1167,279 1198,300 1198,361 1167,339" fill="#747474"/><polygon points="1198,300 1253,274 1253,336 1198,361" fill="#5a5a5a"/>
+   <circle cx="1295" cy="300" r="39" fill="#a5a5a5"/><ellipse cx="1281" cy="282" rx="15" ry="11" fill="#e5e5e5" opacity=".65"/>
+  </g>
+  <text x="1128" y="412" fill="#ecf0f4" font-size="19" font-weight="700" font-family="Arial">RenderWindow</text>
+ </g>
+
+ <g stroke="#5bbfda" stroke-width="4" fill="none" marker-end="url(#arrow)">
+  <path d="M 328 312 H 354"/>
+  <path d="M 515 312 H 524"/>
+  <path d="M 807 312 H 835"/>
+  <path d="M 1087 312 H 1101"/>
+ </g>
+
+ <rect x="65" y="475" width="1317" height="327" rx="19" fill="#1b2b3b" stroke="#39526a"/>
+ <text x="90" y="518" fill="#f1f7fc" font-size="25" font-weight="700" font-family="Arial">Lệnh quan trọng và nơi thực hiện</text>
+ <line x1="91" y1="544" x2="1354" y2="544" stroke="#39546b" stroke-width="2"/>
+ <text x="98" y="582" fill="#8dd0ec" font-size="16" font-family="monospace">windowResize()</text>
+ <text x="348" y="582" fill="#ecf4fc" font-size="17" font-family="monospace">ppl.addRenderTarget(sceneColorName, RGBA8, w, h)</text>
+ <line x1="91" y1="602" x2="1354" y2="602" stroke="#31475d"/>
+ <text x="98" y="640" fill="#8dd0ec" font-size="16" font-family="monospace">ScenePass</text>
+ <text x="348" y="640" fill="#ecf4fc" font-size="17" font-family="monospace">scenePass.addRenderTarget(sceneColorName, CLEAR, STORE)</text>
+ <line x1="91" y1="660" x2="1354" y2="660" stroke="#31475d"/>
+ <text x="98" y="698" fill="#8dd0ec" font-size="16" font-family="monospace">PostPass</text>
+ <text x="348" y="698" fill="#ecf4fc" font-size="17" font-family="monospace">postPass.addTexture(sceneColorName, 'inputTexture')</text>
+ <line x1="91" y1="718" x2="1354" y2="718" stroke="#31475d"/>
+ <text x="98" y="757" fill="#8dd0ec" font-size="16" font-family="monospace">Fullscreen</text>
+ <text x="348" y="757" fill="#ecf4fc" font-size="17" font-family="monospace">postPass.addQueue(OPAQUE).addFullscreenQuad(material, 0)</text>
+ <text x="74" y="842" fill="#8cabc0" font-size="15" font-family="Arial">Ghi nhớ: SceneColor là tên tài nguyên RenderGraph — không phải SpriteFrame hay RenderTexture asset.</text>
+</svg>

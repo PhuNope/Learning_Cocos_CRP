@@ -1,0 +1,1 @@
+/// <reference path='../@cocos/creator-types/engine.d.ts' />
