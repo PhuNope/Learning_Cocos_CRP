@@ -345,7 +345,7 @@ export class LearnCRPPipeline implements rendering.PipelineBuilder {
     }
 }
 
-const BUILDER = new LearnCRPPipeline();
-if (rendering) {
-    rendering.setCustomPipeline('LearnCRP', BUILDER);
-}
+// const BUILDER = new LearnCRPPipeline();
+// if (rendering) {
+//     rendering.setCustomPipeline('LearnCRP', BUILDER);
+// }

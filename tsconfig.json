@@ -3,6 +3,10 @@
   "extends": "./temp/tsconfig.cocos.json",
   /* Add your custom configuration here. */
   "compilerOptions": {
-    "strict": false
+    "strict": false,
+    "lib": [
+      "DOM",
+      "ES2024"
+    ]
   }
 }
