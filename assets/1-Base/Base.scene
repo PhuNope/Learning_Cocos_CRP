@@ -1060,10 +1060,23 @@
     "_enabled": true,
     "__prefab": null,
     "postMaterial": {
-      "__uuid__": "f05fb9b1-7317-4c62-8acb-65e75057d5e2",
+      "__uuid__": "b671dab1-0246-42b6-a5da-3d8a06ef8d92",
       "__expectedType__": "cc.Material"
     },
+    "enableGrayscale": true,
     "grayscaleStrength": 1,
+    "enableInvert": false,
+    "invertStrength": 1,
+    "enableTint": false,
+    "tintStrength": 0.5,
+    "tintColor": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 170,
+      "b": 120,
+      "a": 255
+    },
+    "halfResolutionIntermediates": false,
     "_id": "f43QMQzChFnKmKlSIZyiFS"
   },
   {
