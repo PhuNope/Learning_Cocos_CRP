@@ -1,0 +1,90 @@
+CCEffect %{
+  techniques:
+  - passes:
+    # Index 0: FX (dùng lại cho stage 1 và stage 2)
+    - vert: lesson8-vs
+      frag: lesson8-fx-fs
+      pass: lesson8-fx
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # Index 1: copy opaque - viết toàn bộ fragment output
+    - vert: lesson8-vs
+      frag: lesson8-copy-fs
+      pass: lesson8-copy-opaque
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # Index 2: copy alpha - composite Overlay
+    - vert: lesson8-vs
+      frag: lesson8-copy-fs
+      pass: lesson8-copy-alpha
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: one
+          blendDstAlpha: one_minus_src_alpha
+}%
+
+CCProgram lesson8-vs %{
+  precision highp float;
+  #include <legacy/decode-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <common/common-define>
+  out vec2 v_uv;
+  void main () {
+    StandardVertInput In;
+    CCDecode(In);
+    CC_HANDLE_GET_CLIP_FLIP(In.position.xy);
+    gl_Position = In.position;
+    v_uv = a_texCoord;
+  }
+}%
+
+CCProgram lesson8-fx-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate Lesson8FXParams pass
+  uniform Lesson8FXParams {
+    vec4 fxParams; // x = mode; y = strength
+    vec4 fxTint;
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec4 src = texture(inputTexture, v_uv);
+    vec3 result = src.rgb;
+    if (fxParams.x < 0.5) {
+      float gray = dot(src.rgb, vec3(0.2126, 0.7152, 0.0722));
+      result = vec3(gray);
+    } else if (fxParams.x < 1.5) {
+      result = vec3(1.0) - src.rgb;
+    } else {
+      result = src.rgb * fxTint.rgb;
+    }
+    fragColor = vec4(mix(src.rgb, result, clamp(fxParams.y, 0.0, 1.0)), src.a);
+  }
+}%
+
+CCProgram lesson8-copy-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    fragColor = texture(inputTexture, v_uv);
+  }
+}%

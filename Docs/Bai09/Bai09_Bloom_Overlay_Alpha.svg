@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="970" viewBox="0 0 1600 970"><defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0d1928"/><stop offset="1" stop-color="#192f49"/></linearGradient>
+<radialGradient id="halo"><stop offset="0" stop-color="#fff6a3" stop-opacity="0.93"/><stop offset="0.34" stop-color="#ffcc7a" stop-opacity="0.6"/><stop offset="1" stop-color="#ffcc7a" stop-opacity="0"/></radialGradient>
+<marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8fafc8"/></marker></defs><rect width="1600" height="970" fill="url(#bg)"/>
+<text x="60" y="70" font-family="DejaVu Sans,Arial,sans-serif" font-size="35" font-weight="700" text-anchor="start" fill="#f5fbff">BÀI 9  ·  BLOOM TRÊN OVERLAY VÀ ALPHA COMPOSITE</text>
+<text x="60" y="111" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#b2cadc">Minh họa: World giữ ở window.colorName; Overlay xử lý Bloom trên texture riêng</text>
+<rect x="52" y="178" width="454" height="526" rx="20" fill="#1a2b40" stroke="#52718b" stroke-width="2"/>
+<text x="76" y="221" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#eaf5fc">01. Camera World</text>
+<text x="76" y="254" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" font-weight="400" text-anchor="start" fill="#a9c0d4">Đã ghi vào RenderWindow</text>
+<rect x="79" y="292" width="400" height="310" fill="#71add6" rx="12"/>
+<path d="M 79 502 Q 209 467 304 504 T 479 487 V 602 H 79Z" fill="#43895a"/>
+<rect x="171" y="438" width="102" height="118" fill="#dcaf5d" stroke="#9d7137" stroke-width="4"/>
+<text x="93" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#18334c">World color có sẵn</text>
+<text x="76" y="661" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#e4f0f8">Lần 1: CLEAR + STORE</text>
+<rect x="570" y="178" width="454" height="526" rx="20" fill="#1a2b40" stroke="#52718b" stroke-width="2"/>
+<text x="594" y="221" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#eaf5fc">02. Overlay sau Bloom</text>
+<text x="594" y="254" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" font-weight="400" text-anchor="start" fill="#a9c0d4">Nền alpha = 0; halo có alpha &gt; 0</text>
+<rect x="597" y="292" width="400" height="310" fill="#283b53" rx="12" stroke="#7590ac" stroke-dasharray="8 9"/>
+<ellipse cx="872" cy="436" rx="127" ry="121" fill="url(#halo)"/>
+<circle cx="872" cy="436" r="31" fill="#fff4d4" stroke="#f6db74" stroke-width="5"/>
+<text x="611" y="582" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#b4c9d9">Vùng trống không bị tô màu</text>
+<text x="594" y="661" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#e4f0f8">FX: dùng alpha để tạo halo</text>
+<rect x="1088" y="178" width="454" height="526" rx="20" fill="#1a2b40" stroke="#52718b" stroke-width="2"/>
+<text x="1112" y="221" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#eaf5fc">03. Composite Alpha</text>
+<text x="1112" y="254" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" font-weight="400" text-anchor="start" fill="#a9c0d4">LOAD World + blend Overlay</text>
+<rect x="1115" y="292" width="400" height="310" fill="#71add6" rx="12"/>
+<path d="M 1115 502 Q 1245 467 1340 504 T 1515 487 V 602 H 1115Z" fill="#43895a"/>
+<rect x="1207" y="438" width="102" height="118" fill="#dcaf5d" stroke="#9d7137" stroke-width="4"/>
+<ellipse cx="1390" cy="436" rx="127" ry="121" fill="url(#halo)"/>
+<circle cx="1390" cy="436" r="31" fill="#fff4d4" stroke="#f6db74" stroke-width="5"/>
+<text x="1129" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#18334c">World thấy xuyên qua Overlay</text>
+<text x="1112" y="661" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#e4f0f8">Lần 2: LOAD + Alpha Blend</text>
+<polyline points="506,444 556,444" fill="none" stroke="#8fafc8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="" marker-end="url(#arrow)"/>
+<polyline points="1024,444 1074,444" fill="none" stroke="#8fafc8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="" marker-end="url(#arrow)"/>
+<rect x="54" y="757" width="1494" height="144" rx="18" fill="#13283d" stroke="#507289" stroke-width="2"/>
+<text x="87" y="795" font-family="DejaVu Sans,Arial,sans-serif" font-size="23" font-weight="700" text-anchor="start" fill="#eff9ff">Alpha của vùng quầng sáng</text>
+<text x="87" y="832" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#b7d4e4">Combine: alpha = max(sceneAlpha, luminance(bloom) × intensity × glowAlphaStrength) khi Overlay bật 2 tùy chọn.</text>
+<text x="87" y="867" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#f1cc87">Copy Alpha: output.rgb = color.rgb × alpha   |   Blend Src = ONE, Dst = ONE_MINUS_SRC_ALPHA</text>
+</svg>

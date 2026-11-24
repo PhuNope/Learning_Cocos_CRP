@@ -148,7 +148,7 @@ export class Lesson7PipelineBuilder implements rendering.PipelineBuilder {
     }
 }
 
-const BUILDER = new Lesson7PipelineBuilder();
-if (rendering) {
-    rendering.setCustomPipeline('LearnCRP', BUILDER);
-}
+// const BUILDER = new Lesson7PipelineBuilder();
+// if (rendering) {
+//     rendering.setCustomPipeline('LearnCRP', BUILDER);
+// }

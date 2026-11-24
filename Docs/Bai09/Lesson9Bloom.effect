@@ -1,0 +1,254 @@
+CCEffect %{
+  techniques:
+  - passes:
+    # 0: SceneColor (full) -> HalfBright (1/2)
+    - vert: lesson9-vs
+      frag: lesson9-prefilter-fs
+      pass: lesson9-prefilter
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 1: HalfBright (1/2) -> QuarterDown (1/4)
+    - vert: lesson9-vs
+      frag: lesson9-down-fs
+      pass: lesson9-downsample
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 2: QuarterDown -> QuarterBlurH
+    - vert: lesson9-vs
+      frag: lesson9-blur-h-fs
+      pass: lesson9-blur-h
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 3: QuarterBlurH -> QuarterBlurV
+    - vert: lesson9-vs
+      frag: lesson9-blur-v-fs
+      pass: lesson9-blur-v
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 4: QuarterBlurV + HalfBright -> HalfBloom
+    - vert: lesson9-vs
+      frag: lesson9-up-fs
+      pass: lesson9-upsample
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 5: SceneColor + HalfBloom -> Combined (full)
+    - vert: lesson9-vs
+      frag: lesson9-combine-fs
+      pass: lesson9-combine
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 6: Combined -> RenderWindow (opaque copy)
+    - vert: lesson9-vs
+      frag: lesson9-copy-fs
+      pass: lesson9-copy-opaque
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 7: Combined -> RenderWindow (premultiplied-alpha composite)
+    - vert: lesson9-vs
+      frag: lesson9-copy-alpha-fs
+      pass: lesson9-copy-alpha
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: one
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: one
+          blendDstAlpha: one_minus_src_alpha
+}%
+
+CCProgram lesson9-vs %{
+  precision highp float;
+  #include <legacy/decode-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <common/common-define>
+  out vec2 v_uv;
+  void main () {
+    StandardVertInput In;
+    CCDecode(In);
+    CC_HANDLE_GET_CLIP_FLIP(In.position.xy);
+    gl_Position = In.position;
+    v_uv = a_texCoord;
+  }
+}%
+
+// Prefilter - LDR threshold có soft knee.
+CCProgram lesson9-prefilter-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate BloomThresholdBlock pass
+  uniform BloomThresholdBlock {
+    vec4 bloomParams; // x=threshold, y=softKnee
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec3 color = texture(inputTexture, v_uv).rgb;
+    float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    float knee = max(bloomParams.y, 0.01);
+    float mask = smoothstep(bloomParams.x - knee, bloomParams.x + knee, luma);
+    fragColor = vec4(color * mask, 1.0);
+  }
+}%
+
+// Downsample - 4 taps ở độ phân giải nguồn 1/2.
+CCProgram lesson9-down-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate BloomSourceTexelBlock pass
+  uniform BloomSourceTexelBlock {
+    vec4 sourceTexel; // xy = (1 / sourceWidth, 1 / sourceHeight)
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 h = sourceTexel.xy * 0.5;
+    vec3 sum = texture(inputTexture, v_uv + vec2(-h.x, -h.y)).rgb;
+    sum += texture(inputTexture, v_uv + vec2( h.x, -h.y)).rgb;
+    sum += texture(inputTexture, v_uv + vec2(-h.x,  h.y)).rgb;
+    sum += texture(inputTexture, v_uv + vec2( h.x,  h.y)).rgb;
+    fragColor = vec4(sum * 0.25, 1.0);
+  }
+}%
+
+// Gaussian blur ngang - quarter-size 5 taps.
+CCProgram lesson9-blur-h-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate BloomBlurBlockH pass
+  uniform BloomBlurBlockH {
+    vec4 blurParams; // xy=1/quarterSize, z=radius
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 d = vec2(blurParams.x * blurParams.z, 0.0);
+    vec3 c = texture(inputTexture, v_uv).rgb * 0.227027;
+    c += texture(inputTexture, v_uv + d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv - d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv + 2.0 * d).rgb * 0.070270;
+    c += texture(inputTexture, v_uv - 2.0 * d).rgb * 0.070270;
+    fragColor = vec4(c, 1.0);
+  }
+}%
+
+// Gaussian blur dọc - quarter-size 5 taps.
+CCProgram lesson9-blur-v-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate BloomBlurBlockV pass
+  uniform BloomBlurBlockV {
+    vec4 blurParams; // xy=1/quarterSize, z=radius
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 d = vec2(0.0, blurParams.y * blurParams.z);
+    vec3 c = texture(inputTexture, v_uv).rgb * 0.227027;
+    c += texture(inputTexture, v_uv + d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv - d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv + 2.0 * d).rgb * 0.070270;
+    c += texture(inputTexture, v_uv - 2.0 * d).rgb * 0.070270;
+    fragColor = vec4(c, 1.0);
+  }
+}%
+
+// Upsample - kết hợp blur quarter với bright half.
+CCProgram lesson9-up-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;  // quarterBlurV
+  #pragma rate detailTexture pass
+  uniform sampler2D detailTexture; // halfBright
+  #pragma rate BloomUpBlock pass
+  uniform BloomUpBlock {
+    vec4 upParams; // x=detailWeight
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec3 soft = texture(inputTexture, v_uv).rgb;
+    vec3 detail = texture(detailTexture, v_uv).rgb;
+    fragColor = vec4(soft + detail * upParams.x, 1.0);
+  }
+}%
+
+// Combine - KHÔNG đọc/ghi cùng một render target.
+// RGBA8 chặn RGB về [0..1], alpha giữ scene alpha, có thể mở rộng halo Overlay.
+CCProgram lesson9-combine-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture; // sceneColor (full)
+  #pragma rate bloomTexture pass
+  uniform sampler2D bloomTexture; // halfBloom
+  #pragma rate BloomCombineBlock pass
+  uniform BloomCombineBlock {
+    vec4 combineParams; // x=intensity, y=glowAlphaStrength, z=expandAlpha
+  };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec4 scene = texture(inputTexture, v_uv);
+    vec3 bloom = texture(bloomTexture, v_uv).rgb * combineParams.x;
+    vec3 rgb = min(scene.rgb + bloom, vec3(1.0));
+    float a = scene.a;
+    if (combineParams.z > 0.5) {
+      float glow = dot(bloom, vec3(0.2126, 0.7152, 0.0722));
+      a = max(a, clamp(glow * combineParams.y, 0.0, 1.0));
+    }
+    fragColor = vec4(rgb, a);
+  }
+}%
+
+CCProgram lesson9-copy-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    fragColor = texture(inputTexture, v_uv);
+  }
+}%
+
+// Chuyển straight RGB thành premultiplied RGB trước khi blend ONE/ONE_MINUS_SRC_ALPHA.
+CCProgram lesson9-copy-alpha-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec4 src = texture(inputTexture, v_uv);
+    fragColor = vec4(src.rgb * src.a, src.a);
+  }
+}%
