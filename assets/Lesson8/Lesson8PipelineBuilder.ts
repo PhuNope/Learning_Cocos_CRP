@@ -66,7 +66,7 @@ export class Lesson8PipelineBuilder implements rendering.PipelineBuilder {
     }
 }
 
-const BUILDER = new Lesson8PipelineBuilder();
-if (rendering) {
-    rendering.setCustomPipeline('LearnCRP', BUILDER);
-}
+// const BUILDER = new Lesson8PipelineBuilder();
+// if (rendering) {
+//     rendering.setCustomPipeline('LearnCRP', BUILDER);
+// }
