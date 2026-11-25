@@ -1,0 +1,211 @@
+CCEffect %{
+  techniques:
+  - passes:
+    # 0: lesson10-hdr-boost
+    - vert: lesson10-vs
+      frag: lesson10-boost-fs
+      pass: lesson10-hdr-boost
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 1: lesson10-prefilter
+    - vert: lesson10-vs
+      frag: lesson10-prefilter-fs
+      pass: lesson10-prefilter
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 2: lesson10-downsample
+    - vert: lesson10-vs
+      frag: lesson10-downsample-fs
+      pass: lesson10-downsample
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 3: lesson10-blur-h
+    - vert: lesson10-vs
+      frag: lesson10-blur-h-fs
+      pass: lesson10-blur-h
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 4: lesson10-blur-v
+    - vert: lesson10-vs
+      frag: lesson10-blur-v-fs
+      pass: lesson10-blur-v
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 5: lesson10-upsample
+    - vert: lesson10-vs
+      frag: lesson10-upsample-fs
+      pass: lesson10-upsample
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+    # 6: lesson10-combine
+    - vert: lesson10-vs
+      frag: lesson10-combine-fs
+      pass: lesson10-combine
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+}%
+
+CCProgram lesson10-vs %{
+  precision highp float;
+  #include <legacy/decode-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <common/common-define>
+  out vec2 v_uv;
+  void main () {
+    StandardVertInput In;
+    CCDecode(In);
+    CC_HANDLE_GET_CLIP_FLIP(In.position.xy);
+    gl_Position = In.position;
+    v_uv = a_texCoord;
+  }
+}%
+
+
+CCProgram lesson10-boost-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L10BoostParams pass
+  uniform L10BoostParams { vec4 boostParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec4 scene = texture(inputTexture, v_uv);
+    fragColor = vec4(scene.rgb * boostParams.x, scene.a);
+  }
+}%
+
+
+CCProgram lesson10-prefilter-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L10PrefilterParams pass
+  uniform L10PrefilterParams { vec4 bloomParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec3 c = texture(inputTexture, v_uv).rgb;
+    float luminance = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    float knee = max(bloomParams.y, 0.01);
+    float mask = smoothstep(bloomParams.x - knee, bloomParams.x + knee, luminance);
+    fragColor = vec4(c * mask, 1.0);
+  }
+}%
+
+
+CCProgram lesson10-downsample-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L10SourceTexelBlock pass
+  uniform L10SourceTexelBlock { vec4 sourceTexel; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 h = 0.5 * sourceTexel.xy;
+    vec3 c = texture(inputTexture, v_uv + vec2(-h.x, -h.y)).rgb;
+    c += texture(inputTexture, v_uv + vec2(h.x, -h.y)).rgb;
+    c += texture(inputTexture, v_uv + vec2(-h.x, h.y)).rgb;
+    c += texture(inputTexture, v_uv + vec2(h.x, h.y)).rgb;
+    fragColor = vec4(0.25 * c, 1.0);
+  }
+}%
+
+
+CCProgram lesson10-blur-h-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L10BlurHBlock pass
+  uniform L10BlurHBlock { vec4 blurParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 d = vec2(blurParams.x * blurParams.z, 0.0);
+    vec3 c = texture(inputTexture, v_uv).rgb * 0.227027;
+    c += texture(inputTexture, v_uv + d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv - d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv + 2.0*d).rgb * 0.070270;
+    c += texture(inputTexture, v_uv - 2.0*d).rgb * 0.070270;
+    fragColor = vec4(c, 1.0);
+  }
+}%
+
+
+CCProgram lesson10-blur-v-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L10BlurVBlock pass
+  uniform L10BlurVBlock { vec4 blurParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec2 d = vec2(0.0, blurParams.y * blurParams.z);
+    vec3 c = texture(inputTexture, v_uv).rgb * 0.227027;
+    c += texture(inputTexture, v_uv + d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv - d).rgb * 0.316216;
+    c += texture(inputTexture, v_uv + 2.0*d).rgb * 0.070270;
+    c += texture(inputTexture, v_uv - 2.0*d).rgb * 0.070270;
+    fragColor = vec4(c, 1.0);
+  }
+}%
+
+
+CCProgram lesson10-upsample-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate detailTexture pass
+  uniform sampler2D detailTexture;
+  #pragma rate L10UpParams pass
+  uniform L10UpParams { vec4 upParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec3 low = texture(inputTexture, v_uv).rgb;
+    vec3 hi = texture(detailTexture, v_uv).rgb;
+    fragColor = vec4(low + hi * upParams.x, 1.0);
+  }
+}%
+
+
+CCProgram lesson10-combine-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate bloomTexture pass
+  uniform sampler2D bloomTexture;
+  #pragma rate L10CombineParams pass
+  uniform L10CombineParams { vec4 combineParams; };
+  layout(location = 0) out vec4 fragColor;
+  void main () {
+    vec4 s = texture(inputTexture, v_uv);
+    vec3 b = texture(bloomTexture, v_uv).rgb * combineParams.x;
+    fragColor = vec4(s.rgb + b, s.a);
+  }
+}%
+

@@ -64,5 +64,5 @@ export class Lesson9PipelineBuilder implements rendering.PipelineBuilder {
 }
 
 // Chỉ bật MỘT module đăng ký tên LearnCRP trong cả project.
-const BUILDER = new Lesson9PipelineBuilder();
-if (rendering) rendering.setCustomPipeline('LearnCRP', BUILDER);
+// const BUILDER = new Lesson9PipelineBuilder();
+// if (rendering) rendering.setCustomPipeline('LearnCRP', BUILDER);
