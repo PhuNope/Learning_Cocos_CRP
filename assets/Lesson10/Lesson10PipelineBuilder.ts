@@ -60,5 +60,5 @@ export class Lesson10PipelineBuilder implements rendering.PipelineBuilder {
 
 }
 
-const BUILDER = new Lesson10PipelineBuilder();
-if (rendering) rendering.setCustomPipeline('LearnCRP', BUILDER);
+// const BUILDER = new Lesson10PipelineBuilder();
+// if (rendering) rendering.setCustomPipeline('LearnCRP', BUILDER);

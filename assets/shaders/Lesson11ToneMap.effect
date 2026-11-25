@@ -1,0 +1,55 @@
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: lesson11-vs
+      frag: lesson11-tonemap-fs
+      pass: lesson11-tonemap
+      rasterizerState:
+        cullMode: none
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+}%
+
+CCProgram lesson11-vs %{
+  precision highp float;
+  #include <legacy/decode-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <common/common-define>
+  out vec2 v_uv;
+  void main () {
+    StandardVertInput In;
+    CCDecode(In);
+    CC_HANDLE_GET_CLIP_FLIP(In.position.xy);
+    gl_Position = In.position;
+    v_uv = a_texCoord;
+  }
+}%
+
+CCProgram lesson11-tonemap-fs %{
+  precision highp float;
+  in vec2 v_uv;
+  #pragma rate inputTexture pass
+  uniform sampler2D inputTexture;
+  #pragma rate L11ToneParams pass
+  uniform L11ToneParams { vec4 toneParams; };
+  layout(location = 0) out vec4 fragColor;
+
+  vec3 tonemapColor(vec3 c, float exposure, float kind) {
+    vec3 x = max(c * exposure, vec3(0.0));
+    if (kind < 0.5) return x / (vec3(1.0) + x);
+    return clamp((x * (2.51 * x + vec3(0.03))) /
+                 (x * (2.43 * x + vec3(0.59)) + vec3(0.14)), 0.0, 1.0);
+  }
+  vec3 toSRGB(vec3 c) {
+    vec3 x = max(c, vec3(0.0));
+    vec3 lo = 12.92 * x;
+    vec3 hi = 1.055 * pow(x, vec3(1.0 / 2.4)) - vec3(0.055);
+    return mix(lo, hi, step(vec3(0.0031308), x));
+  }
+  void main () {
+    vec3 mapped = tonemapColor(texture(inputTexture, v_uv).rgb, toneParams.x, toneParams.y);
+    if (toneParams.z > 0.5) mapped = toSRGB(mapped);
+    fragColor = vec4(mapped, 1.0);
+  }
+}%

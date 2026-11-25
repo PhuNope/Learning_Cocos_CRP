@@ -1,0 +1,28 @@
+digraph G {
+  graph [fontname="Noto Sans", bgcolor="#F7FAFC", rankdir=LR, pad="0.35", nodesep="0.40", ranksep="0.55", splines=ortho, compound=true];
+  node  [fontname="Noto Sans", shape=box, style="rounded,filled", color="#D1DCE7", fillcolor="white", fontcolor="#17324D", penwidth=1.2, fontsize=12, margin="0.21,0.12"];
+  edge  [color="#8194A5", arrowsize=0.65, penwidth=1.5];
+  subgraph cluster_screen {
+    label="RENDER WINDOW 0 — Màn hình"; fontname="Noto Sans"; fontcolor="#15476A"; style="rounded,filled"; fillcolor="#ECF6FF"; color="#C3DAEB"; penwidth=1.5; labelloc=t;
+    world [label="Main Camera\nBEFORE_BLOOM",fillcolor="#E0F0FF",color="#A7C8E4"];
+    overlay [label="OverlayCamera\nBEFORE_BLOOM",fillcolor="#E0F0FF",color="#A7C8E4"];
+    sw [label="Shared SceneColor\nColor: World + Overlay\nDepth: Shared SceneDepth", fillcolor="#FFEDCF",color="#E2B46D"];
+    boost [label="HDR Boost\n(tùy chọn)",fillcolor="#FFF4DD"];
+    bloom [label="Bloom chain × 1\nPrefilter | Downsample\nBlur H/V | Upsample | Combine",fillcolor="#E8E0FC",color="#B7A5DA"];
+    tone [label="ToneMap × 1\nHDR to LDR",fillcolor="#E8E0FC",color="#B7A5DA"];
+    screen [label="window.colorName\nKết quả sau ToneMap",fillcolor="#C8F3DF",color="#80C4A2"];
+    ui [label="UI Camera\nAFTER_TONEMAP",fillcolor="#E0F0FF",color="#A7C8E4"];
+    shown [label="Màn hình cuối\nWorld + Overlay + UI",fillcolor="#C8F3DF",color="#80C4A2"];
+    world -> sw [label="CLEAR",fontcolor="#526577",fontsize=10];
+    overlay -> sw [label="LOAD",fontcolor="#526577",fontsize=10];
+    sw -> boost -> bloom -> tone -> screen;
+    ui -> shown [label="draw",fontcolor="#526577",fontsize=10];
+    screen -> shown [label="LOAD",fontcolor="#526577",fontsize=10];
+  }
+  subgraph cluster_rt {
+    label="RENDER WINDOW 1 — RenderTexture"; fontname="Noto Sans"; fontcolor="#15476A"; style="rounded,filled"; fillcolor="#F1F5F9"; color="#CFD9E1"; labelloc=t;
+    rc [label="Camera RT",fillcolor="#E0F0FF"];
+    rout [label="RenderTexture Window\nPipeline độc lập",fillcolor="#D9F4E5"];
+    rc -> rout [label="Direct / Post riêng",fontsize=10];
+  }
+}

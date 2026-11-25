@@ -1,0 +1,25 @@
+digraph G {
+  graph [fontname="Noto Sans", bgcolor="#F7FAFC", rankdir=TB, pad="0.3", nodesep="0.48", ranksep="0.60", splines=polyline];
+  node  [fontname="Noto Sans", shape=box, style="rounded,filled", color="#D1DCE7", fillcolor="white", fontcolor="#17324D", fontsize=12, margin="0.28,0.15"];
+  edge  [color="#8194A5", arrowsize=0.7, penwidth=1.4];
+  title [shape=plain, label=<<B>DIỄN TIẾN COLOR / DEPTH TRONG MỘT WINDOW</B>>];
+  subgraph cluster_s {
+    label="Shared SceneColor + Shared SceneDepth"; fontcolor="#15476A"; color="#BED3E5"; bgcolor="#EDF6FF"; style="rounded,filled";
+    c0 [label="Main Camera\nColor: CLEAR + STORE\nDepth: CLEAR + STORE", fillcolor="#E4F1FF"];
+    c1 [label="OverlayCamera\nColor: LOAD + STORE\nDepth: CLEAR/LOAD + STORE", fillcolor="#E4F1FF"];
+    c2 [label="SceneColor chứa cả hai Camera\nKhông cần Alpha Composite riêng", fillcolor="#FFF0D8"];
+    c0 -> c1 -> c2;
+  }
+  subgraph cluster_p {
+    label="Post-processing một lần"; fontcolor="#634795"; color="#D3C3E8"; bgcolor="#F4EFFC"; style="rounded,filled";
+    p1 [label="HDR Boost (tuỳ chọn)\nBloom 6 Pass (tuỳ chọn)\nToneMap 1 Pass", fillcolor="#EAE0FA"];
+  }
+  subgraph cluster_o {
+    label="Output RenderWindow"; fontcolor="#276449"; color="#BDE0C8"; bgcolor="#EDF9F2"; style="rounded,filled";
+    o0 [label="ToneMap ghi window.colorName\nColor: CLEAR + STORE", fillcolor="#D5F5E1"];
+    o1 [label="UI Camera\nColor: LOAD + STORE\nDepth window: CLEAR + STORE", fillcolor="#D5F5E1"];
+    o0 -> o1;
+  }
+  title -> c0;
+  c2 -> p1 -> o0;
+}
